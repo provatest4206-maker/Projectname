@@ -1,0 +1,48 @@
+name: Build APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip python3-setuptools python3-wheel git zip openjdk-17-jdk
+          pip install buildozer cython==0.29.36 virtualenv
+
+      - name: Build APK with Buildozer
+        run: |
+          buildozer init || true
+          echo "title = CarPlusManager" >> buildozer.spec
+          echo "package.name = carplusmanager" >> buildozer.spec
+          echo "package.domain = org.carplus" >> buildozer.spec
+          echo "source.dir = ." >> buildozer.spec
+          echo "source.include_exts = py,png,jpg,kv,atlas" >> buildozer.spec
+          echo "requirements = python3,kivy" >> buildozer.spec
+          echo "android.api = 33" >> buildozer.spec
+          echo "android.minapi = 21" >> buildozer.spec
+          echo "android.archs = armeabi-v7a,arm64-v8a" >> buildozer.spec
+          echo "android.sdk_path = $ANDROID_HOME" >> buildozer.spec
+          echo "android.ndk_path = $ANDROID_NDK_HOME" >> buildozer.spec
+          echo "android.ndk_api = 21" >> buildozer.spec
+          echo "android.entrypoint = main.py" >> buildozer.spec
+          echo "android.log_level = 2" >> buildozer.spec
+          buildozer android debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: CarPlusManager-APK
+          path: bin/*.apk
